@@ -218,6 +218,8 @@ void setTime(unsigned long hour, unsigned long minutes) {
 }
 
 void setAlarm(unsigned long hour, unsigned long minutes) {
+  unsigned long realHour = hour % 24;
+  unsigned long realMinutes = minutes % 60;
   alarmInMilliSeconds = (hour * milliSecondsInAnHour) + (minutes * milliSecondsInAMinute);
 }
 
