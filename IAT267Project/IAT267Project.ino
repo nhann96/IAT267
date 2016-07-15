@@ -1,3 +1,5 @@
+#include <LiquidCrystal.h>
+
 const unsigned long milliSecondsInAnHour = 3600000;
 const unsigned long milliSecondsInAMinute = 60000;
 
@@ -31,7 +33,12 @@ boolean alarmOn;
 int minuteButtonVal;
 int hourButtonVal;
 
+int speakerPin = 6;
+
+LiquidCrystal lcd(1, 0, 5, 4, 3, 2);
+
 void setup() {
+  lcd.begin(16, 2);
   // put your setup code here, to run once:
   forceBackRightVal = 0;
   forceBackLeftVal = 0;
@@ -51,32 +58,38 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   /*
-   * Shows time and the ability to change the time and alarm
-   *
-   */
+     Shows time and the ability to change the time and alarm
+
+  */
   timeAdjustmentSliderVal = analogRead(timeAdjustmentSlider);
   Serial.println(timeAdjustmentSliderVal);
   updateTime();
   String currentTime = getTime();
   String alarmTime = getAlarm();
-  Serial.println(currentTime);
-  Serial.println(alarmTime);
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print(currentTime);
+
   /*
-   * Gives time a range of 1 sec to check the if the alarm will go off
-   */
+     Gives time a range of 1 sec to check the if the alarm will go off
+  */
   if (!alarmOn && (timeInMilliSeconds >= alarmInMilliSeconds - 500) && (timeInMilliSeconds <= alarmInMilliSeconds + 500)) {
     alarmOn = true;
   }
   /*
-   * When the alarm goes off  make appropriate noises
-   */
+     When the alarm goes off  make appropriate noises
+  */
   if (alarmOn) {
     Serial.println("BEEEEEP BEEEEEP");
+    for (int i = 0; i < 3; i++) {
+      tone(speakerPin, 2093, 100);
+      delay(150);
+    }
   }
 
   /*
-   * Uses the slider with 2 buttons to be able to adjust the current time and the alarm time
-   */
+     Uses the slider with 2 buttons to be able to adjust the current time and the alarm time
+  */
   if (timeAdjustmentSliderVal >= 950) {
     minuteButtonVal = digitalRead(minuteButton);
     if (minuteButtonVal == HIGH) {
@@ -86,6 +99,8 @@ void loop() {
     if (hourButtonVal == HIGH) {
       setTime(getCurrentHour() + 1, getCurrentMinute());
     }
+    lcd.setCursor(0, 0);
+    lcd.print(currentTime);
   }
 
   if (timeAdjustmentSliderVal >= 425 && timeAdjustmentSliderVal <= 625) {
@@ -97,6 +112,8 @@ void loop() {
     if (hourButtonVal == HIGH) {
       setAlarm(getAlarmHour() + 1, getAlarmMinute());
     }
+    lcd.setCursor(0, 0);
+    lcd.print(alarmTime);
   }
   delay(500);
   /*
@@ -125,7 +142,7 @@ void loop() {
      If it is then change condition of the alarm to go off to having no contact with force mats !(BR || BL || FR || FL)
      Allow for user to begin exercising (boolean true)
   */
-  if (alarmOff) {
+  if (alarmOn) {
     lightSensorVal = analogRead(lightSensor);
     if (lightSensorVal < 200) {
       readyToExercise = false;
@@ -146,7 +163,6 @@ void loop() {
 /*
 
 */
-}
 
 unsigned long getCurrentHour() {
   unsigned long hour = timeInMilliSeconds / milliSecondsInAnHour;
@@ -194,6 +210,7 @@ String getAlarm() {
 
 String getTime() {
   String curTime = "";
+  unsigned long hours = timeInMilliSeconds / milliSecondsInAnHour;
   curTime += hours;
   unsigned long leftoverMinutes = timeInMilliSeconds % milliSecondsInAnHour;
   unsigned long minutes = leftoverMinutes / milliSecondsInAMinute;
@@ -218,8 +235,6 @@ void setTime(unsigned long hour, unsigned long minutes) {
 }
 
 void setAlarm(unsigned long hour, unsigned long minutes) {
-  unsigned long realHour = hour % 24;
-  unsigned long realMinutes = minutes % 60;
   alarmInMilliSeconds = (hour * milliSecondsInAnHour) + (minutes * milliSecondsInAMinute);
 }
 
